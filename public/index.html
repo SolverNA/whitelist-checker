@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Тест белых списков</title>
+<meta name="description" content="Проверка работы белых списков мобильного интернета прямо из браузера">
+<meta name="theme-color" content="#0f1115">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="БС-тест">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Тест белых списков</h1>
+    <span id="net" class="chip"></span>
+  </header>
+
+  <section id="verdict" class="card v-none">
+    <b>Нажмите «Запустить тест»</b>
+    <span>Проверка идёт из вашего браузера, с вашей сети.</span>
+  </section>
+
+  <div class="bar">
+    <button id="run" class="primary">Запустить тест</button>
+    <button id="toggleEdit" class="ghost" aria-expanded="false" aria-controls="editor">Списки и настройки</button>
+  </div>
+
+  <section id="results"></section>
+
+  <section id="editor" class="card" hidden>
+    <h2>Настройки</h2>
+    <div class="grid">
+      <label>Таймаут на ресурс, сек
+        <input id="optTimeout" type="number" inputmode="numeric" min="1" max="30">
+      </label>
+      <label>Домен для DoH-запроса
+        <input id="optDoh" type="text" autocapitalize="off" autocomplete="off" spellcheck="false">
+      </label>
+      <label>Автоповтор, сек (0 = выкл)
+        <input id="optAuto" type="number" inputmode="numeric" min="0" max="3600">
+      </label>
+      <label class="check">
+        <input id="optAutostart" type="checkbox"> Запускать тест при открытии
+      </label>
+    </div>
+
+    <h2>Списки</h2>
+    <div id="groups"></div>
+    <div class="bar">
+      <button id="addGroup" class="ghost">+ Группа</button>
+    </div>
+
+    <h2>Резервная копия</h2>
+    <div class="bar">
+      <button id="exportBtn" class="ghost">Экспорт</button>
+      <button id="importBtn" class="ghost">Импорт</button>
+      <button id="resetBtn" class="danger">Сбросить списки</button>
+    </div>
+    <textarea id="ioText" rows="8" spellcheck="false" hidden></textarea>
+    <div id="ioBar" class="bar" hidden>
+      <button id="ioApply" class="primary" hidden>Применить</button>
+      <button id="ioCopy" class="ghost" hidden>Копировать</button>
+      <button id="ioDl" class="ghost" hidden>Скачать</button>
+      <button id="ioClose" class="ghost">Закрыть</button>
+    </div>
+  </section>
+
+  <section id="histBox" hidden>
+    <h2>История проверок <button id="histClear" class="link">очистить</button></h2>
+    <div id="hist"></div>
+  </section>
+
+  <p class="note">
+    Каждый ресурс запрашивается из вашего браузера (fetch, no-cors) с таймаутом.
+    «OK» значит, что DNS, TCP и TLS прошли и сервер ответил. Это не ICMP-пинг, время включает DNS и TLS.
+    DoH проверяется настоящим DNS-запросом (RFC 8484). DoT (порт 853) из браузера проверить нельзя.
+    Для IP по HTTPS возможен ложный сбой, если сертификат выписан не на IP.
+    Списки хранятся только на этом устройстве.
+  </p>
+</main>
+
+<div id="update" class="toast" hidden>
+  Вышла новая версия <button id="reload" class="primary">Обновить</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "wl-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Клиентский тест белых списков (PWA)"
+}
