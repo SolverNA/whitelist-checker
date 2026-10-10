@@ -389,9 +389,15 @@ async function run() {
   if (running) return;
   running = true;
   const btn = $('run');
+  const main = btn.querySelector('.go-main');
+  const sub = btn.querySelector('.go-sub');
   btn.disabled = true;
-  btn.querySelector('.go-main').textContent = '...';
-  btn.querySelector('.go-sub').textContent = 'идёт проверка';
+  if (main && sub) {
+    main.textContent = '...';
+    sub.textContent = 'идёт проверка';
+  } else {
+    btn.textContent = 'Идёт проверка…';
+  }
   $('share').hidden = true;
   $('share').textContent = 'Поделиться';
   try {
@@ -415,8 +421,12 @@ async function run() {
     pushHistory(v);
   } finally {
     btn.disabled = false;
-    btn.querySelector('.go-main').textContent = 'GO';
-    btn.querySelector('.go-sub').textContent = 'запуск теста';
+    if (main && sub) {
+      main.textContent = 'GO';
+      sub.textContent = 'запуск теста';
+    } else {
+      btn.textContent = 'Запустить тест';
+    }
     running = false;
   }
 }
