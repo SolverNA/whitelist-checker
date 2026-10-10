@@ -74,3 +74,9 @@ label.check input{width:auto}
   max-width:520px;margin:0 auto;background:var(--card2);border:1px solid var(--line);border-radius:12px;
   padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;
 }
+
+.score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.score{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.score small{display:block;color:var(--mut);font-size:11px}
+.score strong{display:block;margin-top:2px;font-size:16px}
+.shared-note{margin-top:8px;color:var(--mut);font-size:12px}

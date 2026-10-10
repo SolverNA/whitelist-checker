@@ -270,10 +270,11 @@ function fromB64Url(s) {
 
 function buildShareUrl(v) {
   const payload = {
+    v: 2,
     k: v.key,
     w: clampPct(v.w == null ? null : v.w * 100),
     o: clampPct(v.o == null ? null : v.o * 100),
-    ts: Date.now(),
+    t: Date.now(),
   };
   const url = new URL(location.href);
   url.searchParams.set('r', toB64Url(JSON.stringify(payload)));
@@ -286,6 +287,7 @@ function parseSharedVerdict() {
   try {
     const data = JSON.parse(fromB64Url(token));
     if (!data || typeof data !== 'object') return null;
+    if (data.v !== 2 && !(!('v' in data) && 'ts' in data)) return null;
     const key = String(data.k || '');
     if (!VERDICT_TEXT[key]) return null;
     const w = Number.isFinite(data.w) ? clampPct(data.w) / 100 : null;
@@ -345,7 +347,7 @@ function setVerdict(v) {
     box.append(h('div', { class: 'stats' }, 'белый список: ' + fmtPct(v.w) + ' · внешние: ' + fmtPct(v.o)));
   }
   if (v.shared) {
-    box.append(h('div', { class: 'shared-note' }, 'Открыт результат по ссылке. Нажмите GO, чтобы проверить текущую сеть.'));
+    box.append(h('div', { class: 'shared-note' }, 'Открыт результат по ссылке. Нажмите «Запустить тест», чтобы проверить текущую сеть.'));
   }
   $('share').hidden = v.key === 'none' || v.key === 'run';
 }
@@ -389,15 +391,8 @@ async function run() {
   if (running) return;
   running = true;
   const btn = $('run');
-  const main = btn.querySelector('.go-main');
-  const sub = btn.querySelector('.go-sub');
   btn.disabled = true;
-  if (main && sub) {
-    main.textContent = '...';
-    sub.textContent = 'идёт проверка';
-  } else {
-    btn.textContent = 'Идёт проверка…';
-  }
+  btn.textContent = 'Идёт проверка…';
   $('share').hidden = true;
   $('share').textContent = 'Поделиться';
   try {
@@ -421,12 +416,7 @@ async function run() {
     pushHistory(v);
   } finally {
     btn.disabled = false;
-    if (main && sub) {
-      main.textContent = 'GO';
-      sub.textContent = 'запуск теста';
-    } else {
-      btn.textContent = 'Запустить тест';
-    }
+    btn.textContent = 'Запустить тест';
     running = false;
   }
 }
