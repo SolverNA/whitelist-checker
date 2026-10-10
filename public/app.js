@@ -145,6 +145,7 @@ let rows = [];
 let running = false;
 let autoTimer = null;
 let ioMode = null;
+let lastVerdict = { key: 'none', title: '', text: '', w: null, o: null };
 
 const $ = (id) => document.getElementById(id);
 
@@ -280,12 +281,49 @@ function setStatus(el, r, timeoutSec) {
 }
 
 function setVerdict(v) {
+  lastVerdict = v;
   const box = $('verdict');
   box.className = 'card v-' + v.key;
   box.replaceChildren(h('b', {}, v.title), h('span', {}, v.text));
   if (v.key !== 'run' && (v.w != null || v.o != null)) {
     box.append(h('div', { class: 'stats' }, 'белый список: ' + fmtPct(v.w) + ' · внешние: ' + fmtPct(v.o)));
   }
+  $('share').hidden = v.key === 'none' || v.key === 'run';
+}
+
+function shareText(v) {
+  let text = 'Результат теста белых списков: ' + v.title + '. ' + v.text;
+  if (v.w != null || v.o != null) text += '\nБС: ' + fmtPct(v.w) + ', вне БС: ' + fmtPct(v.o) + '.';
+  return text;
+}
+
+async function shareResult() {
+  if (lastVerdict.key === 'none' || lastVerdict.key === 'run') return;
+  const btn = $('share');
+  const text = shareText(lastVerdict);
+  const url = location.href;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Результат теста белых списков', text, url });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('Не удалось поделиться результатом.');
+      return;
+    }
+  }
+  try { await navigator.clipboard.writeText(text + '\n' + url); }
+  catch (_) {
+    const ta = h('textarea', { value: text + '\n' + url, readonly: true });
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.append(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+  btn.textContent = 'Скопировано';
+  setTimeout(() => { btn.textContent = 'Поделиться'; }, 1500);
 }
 
 async function run() {
@@ -294,6 +332,8 @@ async function run() {
   const btn = $('run');
   btn.disabled = true;
   btn.textContent = 'Идёт проверка…';
+  $('share').hidden = true;
+  $('share').textContent = 'Поделиться';
   try {
     renderSkeleton();
     const sec = cfg.timeout, ms = sec * 1000;
@@ -481,6 +521,7 @@ function init() {
   cfg = loadCfg();
 
   $('run').addEventListener('click', run);
+  $('share').addEventListener('click', shareResult);
   $('toggleEdit').addEventListener('click', () => {
     const ed = $('editor');
     ed.hidden = !ed.hidden;
