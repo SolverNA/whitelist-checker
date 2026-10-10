@@ -13,6 +13,12 @@ const ROLE_LABEL = {
 const ROLE_SHORT = { wl: 'БС', out: 'вне БС', info: 'инфо' };
 const TYPE_LABEL = { url: 'Сайт', ip: 'IP', doh: 'DoH' };
 const VERDICT_LABEL = { wl: 'БС включены', off: 'БС выключены', down: 'нет сети', mixed: 'неясно', none: '—' };
+const VERDICT_TEXT = {
+  wl: 'Доступны только ресурсы из белого списка.',
+  off: 'Внешние ресурсы открываются, интернет полный.',
+  down: 'Недоступно всё: и белый список, и внешние ресурсы. Проверьте подключение.',
+  mixed: 'Часть ресурсов доступна, часть нет. Возможна точечная блокировка или нестабильная сеть.',
+};
 
 const I = (n, t, v) => ({ n, t, v });
 
@@ -251,6 +257,51 @@ function probeItem(it, ms) {
 const pct = (x) => (x == null ? null : Math.round(x * 100));
 const fmtPct = (x) => (x == null ? '—' : Math.round(x * 100) + '%');
 const shortVal = (it) => it.v.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+const clampPct = (x) => Number.isFinite(x) ? Math.max(0, Math.min(100, Math.round(x))) : null;
+
+function toB64Url(s) {
+  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromB64Url(s) {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4);
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+function buildShareUrl(v) {
+  const payload = {
+    k: v.key,
+    w: clampPct(v.w == null ? null : v.w * 100),
+    o: clampPct(v.o == null ? null : v.o * 100),
+    ts: Date.now(),
+  };
+  const url = new URL(location.href);
+  url.searchParams.set('r', toB64Url(JSON.stringify(payload)));
+  return url.toString();
+}
+
+function parseSharedVerdict() {
+  const token = new URLSearchParams(location.search).get('r');
+  if (!token) return null;
+  try {
+    const data = JSON.parse(fromB64Url(token));
+    if (!data || typeof data !== 'object') return null;
+    const key = String(data.k || '');
+    if (!VERDICT_TEXT[key]) return null;
+    const w = Number.isFinite(data.w) ? clampPct(data.w) / 100 : null;
+    const o = Number.isFinite(data.o) ? clampPct(data.o) / 100 : null;
+    return {
+      key,
+      title: 'Результат из ссылки: ' + (VERDICT_LABEL[key] || key),
+      text: VERDICT_TEXT[key],
+      w,
+      o,
+      shared: true,
+    };
+  } catch (_) {
+    return null;
+  }
+}
 
 function renderSkeleton() {
   const box = $('results');
@@ -285,8 +336,16 @@ function setVerdict(v) {
   const box = $('verdict');
   box.className = 'card v-' + v.key;
   box.replaceChildren(h('b', {}, v.title), h('span', {}, v.text));
+  if (v.w != null || v.o != null) {
+    box.append(h('div', { class: 'score-grid' },
+      h('div', { class: 'score' }, h('small', {}, 'БЕЛЫЙ СПИСОК'), h('strong', {}, fmtPct(v.w))),
+      h('div', { class: 'score' }, h('small', {}, 'ВНЕ БС'), h('strong', {}, fmtPct(v.o)))));
+  }
   if (v.key !== 'run' && (v.w != null || v.o != null)) {
     box.append(h('div', { class: 'stats' }, 'белый список: ' + fmtPct(v.w) + ' · внешние: ' + fmtPct(v.o)));
+  }
+  if (v.shared) {
+    box.append(h('div', { class: 'shared-note' }, 'Открыт результат по ссылке. Нажмите GO, чтобы проверить текущую сеть.'));
   }
   $('share').hidden = v.key === 'none' || v.key === 'run';
 }
@@ -301,7 +360,7 @@ async function shareResult() {
   if (lastVerdict.key === 'none' || lastVerdict.key === 'run') return;
   const btn = $('share');
   const text = shareText(lastVerdict);
-  const url = location.href;
+  const url = buildShareUrl(lastVerdict);
   if (navigator.share) {
     try {
       await navigator.share({ title: 'Результат теста белых списков', text, url });
@@ -312,9 +371,9 @@ async function shareResult() {
       return;
     }
   }
-  try { await navigator.clipboard.writeText(text + '\n' + url); }
+  try { await navigator.clipboard.writeText(url); }
   catch (_) {
-    const ta = h('textarea', { value: text + '\n' + url, readonly: true });
+    const ta = h('textarea', { value: url, readonly: true });
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
     document.body.append(ta);
@@ -322,7 +381,7 @@ async function shareResult() {
     document.execCommand('copy');
     ta.remove();
   }
-  btn.textContent = 'Скопировано';
+  btn.textContent = 'Ссылка скопирована';
   setTimeout(() => { btn.textContent = 'Поделиться'; }, 1500);
 }
 
@@ -331,7 +390,8 @@ async function run() {
   running = true;
   const btn = $('run');
   btn.disabled = true;
-  btn.textContent = 'Идёт проверка…';
+  btn.querySelector('.go-main').textContent = '...';
+  btn.querySelector('.go-sub').textContent = 'идёт проверка';
   $('share').hidden = true;
   $('share').textContent = 'Поделиться';
   try {
@@ -355,7 +415,8 @@ async function run() {
     pushHistory(v);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Запустить тест';
+    btn.querySelector('.go-main').textContent = 'GO';
+    btn.querySelector('.go-sub').textContent = 'запуск теста';
     running = false;
   }
 }
@@ -584,7 +645,9 @@ function init() {
   updateChip();
   setAuto();
   initSW();
-  if (cfg.autostart) run();
+  const sharedVerdict = parseSharedVerdict();
+  if (sharedVerdict) setVerdict(sharedVerdict);
+  else if (cfg.autostart) run();
 }
 
 if (typeof document !== 'undefined') {
