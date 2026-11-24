@@ -40,6 +40,12 @@ function DEFAULTS() {
           I('Сбербанк', 'url', 'https://www.sberbank.ru/'),
           I('Ozon', 'url', 'https://www.ozon.ru/'),
           I('Wildberries', 'url', 'https://www.wildberries.ru/'),
+          I('Авито', 'url', 'https://avito.ru/'),
+          I('2ГИС', 'url', 'https://2gis.ru/'),
+          I('РЖД', 'url', 'https://rzd.ru/'),
+          I('Почта России', 'url', 'https://pochta.ru/'),
+          I('Альфа-Банк', 'url', 'https://alfabank.ru/'),
+          I('RUTUBE', 'url', 'https://rutube.ru/'),
           I('Яндекс DNS 77.88.8.1', 'ip', '77.88.8.1'),
         ],
       },
@@ -50,8 +56,27 @@ function DEFAULTS() {
           I('DuckDuckGo', 'url', 'https://duckduckgo.com/'),
           I('Cloudflare', 'url', 'https://www.cloudflare.com/'),
           I('GitHub', 'url', 'https://github.com/'),
+          I('Apple', 'url', 'https://www.apple.com/'),
+          I('Microsoft', 'url', 'https://www.microsoft.com/'),
+          I('Amazon', 'url', 'https://www.amazon.com/'),
+          I('Booking', 'url', 'https://www.booking.com/'),
+          I('Stack Overflow', 'url', 'https://stackoverflow.com/'),
           I('Cloudflare DNS 1.1.1.1', 'ip', '1.1.1.1'),
           I('Google DNS 8.8.8.8', 'ip', '8.8.8.8'),
+        ],
+      },
+      {
+        name: 'Обычно ограничиваемые сайты', role: 'info', items: [
+          I('YouTube', 'url', 'https://youtube.com/'),
+          I('Discord', 'url', 'https://discord.com/'),
+          I('Facebook', 'url', 'https://facebook.com/'),
+          I('Instagram', 'url', 'https://instagram.com/'),
+          I('X (Twitter)', 'url', 'https://x.com/'),
+          I('Signal', 'url', 'https://signal.org/'),
+          I('LinkedIn', 'url', 'https://linkedin.com/'),
+          I('BBC', 'url', 'https://bbc.com/'),
+          I('Deutsche Welle', 'url', 'https://dw.com/'),
+          I('Meduza', 'url', 'https://meduza.io/'),
         ],
       },
       {
@@ -60,6 +85,9 @@ function DEFAULTS() {
           I('Google DoH', 'doh', 'https://dns.google/dns-query'),
           I('Яндекс DoH', 'doh', 'https://common.dot.dns.yandex.net/dns-query'),
           I('Quad9 DoH', 'doh', 'https://dns.quad9.net/dns-query'),
+          I('AdGuard DoH', 'doh', 'https://dns.adguard-dns.com/dns-query'),
+          I('Control D DoH', 'doh', 'https://freedns.controld.com/p0'),
+          I('DNS.SB DoH', 'doh', 'https://doh.dns.sb/dns-query'),
         ],
       },
     ],
@@ -622,8 +650,8 @@ function init() {
   $('ioDl').addEventListener('click', downloadIO);
   $('ioClose').addEventListener('click', closeIO);
   $('resetBtn').addEventListener('click', () => {
-    if (!confirm('Вернуть списки и настройки по умолчанию?')) return;
-    cfg = DEFAULTS();
+    if (!confirm('Заменить списки стандартными? Ваши списки будут удалены, остальные настройки сохранятся.')) return;
+    cfg.groups = DEFAULTS().groups;
     saveCfg();
     renderEditor();
     renderSkeleton();
